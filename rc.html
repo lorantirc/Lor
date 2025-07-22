@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="UTF-8">
+  <title>بررسی لینک‌های مشکوک</title>
+  <style>
+    body { font-family: sans-serif; direction: rtl; background: #eef2f5; padding: 30px; }
+    textarea, button { width: 100%; font-size: 16px; padding: 10px; margin-top: 10px; }
+    #result { margin-top: 20px; background: white; padding: 20px; border-radius: 8px; }
+    .danger { color: #b00; font-weight: bold; }
+    .safe { color: #080; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <h2>🔒 بررسی لینک‌های مشکوک</h2>
+  <textarea id="bulk" rows="7" placeholder="لینک‌ها را اینجا بنویس (هر خط یک لینک)"></textarea>
+  <button onclick="checkBulk()">بررسی</button>
+  <div id="result"></div>
+
+  <script>
+    // ✅ لیست کامل دامنه‌های مشکوک
+    const blacklistedDomains = [
+      "psyopdrop.fun","psyop.dege-token.fun","login-directo.sbsvoldemor9160690",
+      "resettoptussupdatee.framer.website","buysod.wixsite.com","new.event-dege.top",
+      "serverupdateb.webflow.io","pancakerwap.finance","edgedrain.work",
+      "emodechallangers.com","open.degetoken.fun","open.degetoken.funtuanphuong9160675",
+      "seguro.lojahavan.site","sso--trezorcom-auth.webflow.io","yon.ir",
+      "sabtena.ir","sana-adliran.com","eadliran.info","sena-portal.ir",
+      "adllran.ir","adl1ran.ir","adlran.ir","sanad-adliran.ir","sanaad.ir"
+    ];
+
+    const sanaOfficialDomains = ["adliran.ir","eadl.ir"];
+
+    // ✅ کلیدواژه‌ها و دامنه‌های مرتبط با یارانه
+    const yaraneKeywords = ["یارانه","قطع-یارانه","دریافت-یارانه","payaneh"];
+    const yaraneDomains = ["yaraneh.ir","emehyarane.ir","yaranehpay.com"];
+
+    function extractDomain(u) {
+      try { return new URL(u).hostname.toLowerCase(); }
+      catch { return null; }
+    }
+
+    function checkURL(url) {
+      const domain = extractDomain(url);
+      if (!domain) return { safe: false, reason: "آدرس نامعتبر است." };
+
+      // بررسی دامنه مشکوک
+      for (let bad of blacklistedDomains) {
+        if (domain.includes(bad)) return { safe: false, reason: `⚠️ دامنه مشکوک: ${bad}` };
+      }
+
+      // بررسی جعل ثنا / ابلاغیه
+      const hasSana = ['ثنا','ابلاغ','adl','sana'].some(k => url.includes(k));
+      const isSanaOfficial = sanaOfficialDomains.includes(domain);
+      if (hasSana && !isSanaOfficial) {
+        return { safe: false, reason: "⚠️ احتمال جعل لینک سامانه ثنا / ابلاغیه" };
+      }
+
+      // بررسی یارانه
+      const hasYaraneKeyword = yaraneKeywords.some(k => url.includes(k));
+      const isYaraneDomain = yaraneDomains.some(d => domain.includes(d));
+      if (hasYaraneKeyword || isYaraneDomain) {
+        return { safe: false, reason: "⚠️ احتمال فیشینگ مرتبط با یارانه" };
+      }
+
+      // ساختار مشکوک
+      if (/[@%]/.test(url) || /(bit\.ly|tinyurl)/.test(url)) {
+        return { safe: false, reason: "⚠️ ساختار مشکوک یا کوتاه‌کننده به‌کار رفته است." };
+      }
+
+      return { safe: true };
+    }
+
+    function checkBulk() {
+      const lines = document.getElementById('bulk').value.trim().split(/\r?\n/);
+      const output = lines.map(url => {
+        const res = checkURL(url);
+        return `<p>${url} ➤ ${res.safe ? '<span class="safe">✅ ایمن</span>' : '<span class="danger">⚠️ مشکوک</span>'} ${res.reason ? ' - ' + res.reason : ''}</p>`;
+      }).join('');
+      document.getElementById('result').innerHTML = output;
+    }
+  </script>
+
+</body>
+</html>
